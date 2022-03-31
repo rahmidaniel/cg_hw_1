@@ -18,8 +18,8 @@
 //
 // NYILATKOZAT
 // ---------------------------------------------------------------------------------------------
-// Nev    : 
-// Neptun : 
+// Nev    : Rahmi Daniel
+// Neptun : WIFRTR
 // ---------------------------------------------------------------------------------------------
 // ezennel kijelentem, hogy a feladatot magam keszitettem, es ha barmilyen segitseget igenybe vettem vagy
 // mas szellemi termeket felhasznaltam, akkor a forrast es az atvett reszt kommentekben egyertelmuen jeloltem.
@@ -31,7 +31,8 @@
 // Tudomasul veszem, hogy a forrasmegjeloles kotelmenek megsertese eseten a hazifeladatra adhato pontokat
 // negativ elojellel szamoljak el es ezzel parhuzamosan eljaras is indul velem szemben.
 //=============================================================================================
-#include "framework.h"
+#include <iostream>
+#include "Molecule.h"
 
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char * const vertexSource = R"(
@@ -73,7 +74,17 @@ void onInitialization() {
 	glGenBuffers(1, &vbo);	// Generate 1 buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-	float vertices[] = { -0.8f, -0.8f, -0.6f, 1.0f, 0.8f, -0.2f };
+	//float vertices[] = { -1.f, -0.8f, -0.6f, 1.0f, 0.8f, -0.2f };
+
+    //TODO: trial
+    Molecule molecule = Molecule();
+    float vertices[molecule.points.size()];
+    std::cout << "size " << molecule.points.size() << "/2 =" << molecule.atomNum << std::endl;
+    for(int i = 0; i < molecule.points.size(); i++) {
+        vertices[i] = molecule.points[i]/10;
+        std::cout << molecule.points[i] << std::endl;
+    }
+
 	glBufferData(GL_ARRAY_BUFFER, 	// Copy to GPU target
 		sizeof(vertices),  // # bytes
 		vertices,	      	// address
@@ -82,7 +93,7 @@ void onInitialization() {
 	glEnableVertexAttribArray(0);  // AttribArray 0
 	glVertexAttribPointer(0,       // vbo -> AttribArray 0
 		2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
-		0, NULL); 		     // stride, offset: tightly packed
+		0, nullptr); 		     // stride, offset: tightly packed
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
@@ -106,7 +117,7 @@ void onDisplay() {
 	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
 	glBindVertexArray(vao);  // Draw call
-	glDrawArrays(GL_TRIANGLES, 0 /*startIdx*/, 3 /*# Elements*/);
+	glDrawArrays(GL_TRIANGLES, 0 /*startIdx*/, 10 /*# Elements*/);
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
@@ -134,16 +145,16 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
 	float cY = 1.0f - 2.0f * pY / windowHeight;
 
-	char * buttonStat;
+	std::string buttonStat;
 	switch (state) {
 	case GLUT_DOWN: buttonStat = "pressed"; break;
 	case GLUT_UP:   buttonStat = "released"; break;
 	}
 
 	switch (button) {
-	case GLUT_LEFT_BUTTON:   printf("Left button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);   break;
-	case GLUT_MIDDLE_BUTTON: printf("Middle button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY); break;
-	case GLUT_RIGHT_BUTTON:  printf("Right button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);  break;
+	case GLUT_LEFT_BUTTON:   printf("Left button %s at (%3.2f, %3.2f)\n", buttonStat.c_str(), cX, cY);   break;
+	case GLUT_MIDDLE_BUTTON: printf("Middle button %s at (%3.2f, %3.2f)\n", buttonStat.c_str(), cX, cY); break;
+	case GLUT_RIGHT_BUTTON:  printf("Right button %s at (%3.2f, %3.2f)\n", buttonStat.c_str(), cX, cY);  break;
 	}
 }
 

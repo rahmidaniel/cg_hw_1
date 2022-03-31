@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(NEVEZZ_AT
+project(CG_HF1
         VERSION 0.0.0
         LANGUAGES CXX
         DESCRIPTION "IRJ AT")
 
-set(SRC_FILES ./src/framework.cpp ./src/Skeleton.cpp) # BŐVITSD KI
-set(HEADER_FILES ./src/framework.h) # BŐVÍTSD KI
+set(SRC_FILES ./src/framework.cpp ./src/Skeleton.cpp src/Molecule.cpp) # BŐVITSD KI
+set(HEADER_FILES ./src/framework.h src/Molecule.h src/utility.h) # BŐVÍTSD KI
 
 option(I_LIKE_PAIN "Enable pedantic build" OFF)
 option(CLANG_TOOLING "Enable compile commands" OFF)
@@ -33,7 +33,7 @@ endif()
 set_source_files_properties(${SRC_FOLDER}/Skeleton.cpp ${SRC_FOLDER}/framework.cpp
         ${SRC_FOLDER}/framework.h PROPERTIES GENERATED TRUE)
 
-add_executable(program)
+add_executable(program src/utility.cpp)
 target_sources(program PRIVATE ${SRC_FILES} ${HEADER_FILES})
 target_include_directories(program PRIVATE ${INCLUDE_FOLDER})
 set_property(TARGET program PROPERTY CXX_STANDARD 14)
