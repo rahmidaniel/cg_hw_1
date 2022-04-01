@@ -34,16 +34,24 @@
 #include <iostream>
 #include "Molecule.h"
 
+// Data
+Molecule molecule = Molecule();
+
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char * const vertexSource = R"(
 	#version 330				// Shader 3.3
 	precision highp float;		// normal floats, makes no difference on desktop computers
 
+    layout(location = 0) in vec2 pos;
+    layout(location = 1) in vec4 color;
+
+    out vec4 outColor;
+
 	uniform mat4 MVP;			// uniform variable, the Model-View-Projection transformation matrix
-	layout(location = 0) in vec2 vp;	// Varying input: vp = vertex position is expected in attrib array 0
 
 	void main() {
-		gl_Position = vec4(vp.x, vp.y, 0, 1) * MVP;		// transform vp from modeling space to normalized device space
+		gl_Position = vec4(pos.x, pos.y, 0, 1) * MVP;		// transform vp from modeling space to normalized device space
+		outColor = color;
 	}
 )";
 
@@ -52,72 +60,53 @@ const char * const fragmentSource = R"(
 	#version 330			// Shader 3.3
 	precision highp float;	// normal floats, makes no difference on desktop computers
 	
-	uniform vec3 color;		// uniform variable, the color of the primitive
-	out vec4 outColor;		// computed color of the current pixel
+//	uniform vec3 color;		// uniform variable, the color of the primitive
+    //TODO: is this needed????
+    in vec4 outColor;
+    out vec4 fragmentColor;		// computed color of the current pixel
 
 	void main() {
-		outColor = vec4(color, 1);	// computed color is the color of the primitive
+		fragmentColor = outColor;	// computed color is the color of the primitive //TODO: set to temp color, should be outColor
 	}
 )";
 
 GPUProgram gpuProgram; // vertex and fragment shaders
-unsigned int vao;	   // virtual world on the GPU
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
+    glLineWidth(2.0f); // line pixel width
 
-	glGenVertexArrays(1, &vao);	// get 1 vao id
-	glBindVertexArray(vao);		// make it active
-
-	unsigned int vbo;		// vertex buffer object
-	glGenBuffers(1, &vbo);	// Generate 1 buffer
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-	//float vertices[] = { -1.f, -0.8f, -0.6f, 1.0f, 0.8f, -0.2f };
-
-    //TODO: trial
-    Molecule molecule = Molecule();
-    float vertices[molecule.points.size()];
-    std::cout << "size " << molecule.points.size() << "/2 =" << molecule.atomNum << std::endl;
-    for(int i = 0; i < molecule.points.size(); i++) {
-        vertices[i] = molecule.points[i]/10;
-        std::cout << molecule.points[i] << std::endl;
-    }
-
-	glBufferData(GL_ARRAY_BUFFER, 	// Copy to GPU target
-		sizeof(vertices),  // # bytes
-		vertices,	      	// address
-		GL_STATIC_DRAW);	// we do not change later
-
-	glEnableVertexAttribArray(0);  // AttribArray 0
-	glVertexAttribPointer(0,       // vbo -> AttribArray 0
-		2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
-		0, nullptr); 		     // stride, offset: tightly packed
+    molecule.create();
+    //for(auto atom: molecule.atoms) atom.create();
 
 	// create program for the GPU
-	gpuProgram.create(vertexSource, fragmentSource, "outColor");
+	gpuProgram.create(vertexSource, fragmentSource, "fragmentColor");
 }
 
 // Window has become invalid: Redraw
 void onDisplay() {
-	glClearColor(0, 0, 0, 0);     // background color
+//    int error;
+//    while( (error = glGetError()) != GL_NO_ERROR){
+//        printf("error: %n", error);
+//    }
+
+	glClearColor(0.5f, 0.5f, 0.5f, 1);     // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
 	// Set color to (0, 1, 0) = green
-	int location = glGetUniformLocation(gpuProgram.getId(), "color");
-	glUniform3f(location, 0.0f, 1.0f, 0.0f); // 3 floats
+	//int location = glGetUniformLocation(gpuProgram.getId(), "color");
+	//glUniform3f(location, 0.0f, 1.0f, 0.0f); // 3 floats
 
 	float MVPtransf[4][4] = { 1, 0, 0, 0,    // MVP matrix, 
 							  0, 1, 0, 0,    // row-major!
 							  0, 0, 1, 0,
 							  0, 0, 0, 1 };
 
-	location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
+	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
 	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
-	glBindVertexArray(vao);  // Draw call
-	glDrawArrays(GL_TRIANGLES, 0 /*startIdx*/, 10 /*# Elements*/);
+    molecule.draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }

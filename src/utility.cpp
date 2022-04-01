@@ -17,17 +17,3 @@ int fastExpo(int base, int exp){
     int oneHalf = fastExpo(base,exp / 2);
     return oneHalf * oneHalf * fastExpo(base,exp % 2);
 }
-
-atom::atom() {
-    pos = vec2(randomInt(-10,10), randomInt(-10,10));
-    radius = randomInt(1, 6);
-
-    int intensity = randomInt(); // TODO: ask if separate for charge and mass
-    mass = 1.008f * intensity;
-    qCharge = -1.602f * fastExpo(10, 19) * intensity;
-
-    // calculate color intensity
-    float alphaIntensity = 255 * ((float)intensity/RAND_MAX);
-    if(qCharge > 0) color = vec4(255,0,0, alphaIntensity); // red
-    else color = vec4(0,0,255, alphaIntensity); // blue
-}

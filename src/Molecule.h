@@ -6,19 +6,24 @@
 #define CG_HF1_MOLECULE_H
 
 #include "utility.h"
+#include "Atom.h"
 
 class Molecule {
-    float vel;
-    float torque;
-    atomNode atoms; // Tree of atoms
+    unsigned int vbo, vao;
+
+    float vel = 0;
+    float torque = 0;
+    atomNode nodes = atomNode(); // Tree of nodes
+    std::vector<vertex> bonds;
 
 public:
     int atomNum; // Between 2-8
-    Molecule();
-    void calculateVertices(float* res);
-    void generateAtomTree(atomNode& node, int& atomNumCopy);
+    std::vector<Atom*> atoms;
 
-    std::vector<float> points;
+    Molecule();
+    void generateAtomTree(atomNode& node, int& atomNumCopy);
+    void create();
+    void draw();
 };
 
 
