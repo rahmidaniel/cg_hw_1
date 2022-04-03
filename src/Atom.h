@@ -24,6 +24,7 @@ public:
     Atom();
     void create();
     void draw();
+    ~Atom();
 };
 
 struct atomNode{

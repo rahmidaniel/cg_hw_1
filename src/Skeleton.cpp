@@ -35,49 +35,16 @@
 #include "Molecule.h"
 
 // Data
-Molecule molecule = Molecule();
-
-// vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
-const char * const vertexSource = R"(
-	#version 330				// Shader 3.3
-	precision highp float;		// normal floats, makes no difference on desktop computers
-
-    layout(location = 0) in vec2 pos;
-    layout(location = 1) in vec4 color;
-
-    out vec4 outColor;
-
-	uniform mat4 MVP;			// uniform variable, the Model-View-Projection transformation matrix
-
-	void main() {
-		gl_Position = vec4(pos.x, pos.y, 0, 1) * MVP;		// transform vp from modeling space to normalized device space
-		outColor = color;
-	}
-)";
-
-// fragment shader in GLSL
-const char * const fragmentSource = R"(
-	#version 330			// Shader 3.3
-	precision highp float;	// normal floats, makes no difference on desktop computers
-	
-//	uniform vec3 color;		// uniform variable, the color of the primitive
-    //TODO: is this needed????
-    in vec4 outColor;
-    out vec4 fragmentColor;		// computed color of the current pixel
-
-	void main() {
-		fragmentColor = outColor;	// computed color is the color of the primitive //TODO: set to temp color, should be outColor
-	}
-)";
-
-GPUProgram gpuProgram; // vertex and fragment shaders
+Molecule molecule1 = Molecule();
+Molecule molecule2 = Molecule();
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
     glLineWidth(2.0f); // line pixel width
 
-    molecule.create();
+    molecule1.create();
+    molecule2.create();
     //for(auto atom: molecule.atoms) atom.create();
 
 	// create program for the GPU
@@ -98,7 +65,7 @@ void onDisplay() {
 	//int location = glGetUniformLocation(gpuProgram.getId(), "color");
 	//glUniform3f(location, 0.0f, 1.0f, 0.0f); // 3 floats
 
-	float MVPtransf[4][4] = { 1, 0, 0, 0,    // MVP matrix, 
+	float MVPtransf[4][4] = { 1, 0, 0, 0,    // MVP matrix,
 							  0, 1, 0, 0,    // row-major!
 							  0, 0, 1, 0,
 							  0, 0, 0, 1 };
@@ -106,7 +73,8 @@ void onDisplay() {
 	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
 	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
-    molecule.draw();
+    molecule1.draw();
+    molecule2.draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
@@ -114,6 +82,11 @@ void onDisplay() {
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
+	if (key == 't') {
+        molecule1.init(); molecule1.create();
+        molecule2.init(); molecule2.create();
+    };         // if d, invalidate display, i.e. redraw
+    glutPostRedisplay();
 }
 
 // Key of ASCII code released
@@ -150,4 +123,9 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 // Idle event indicating that some time elapsed: do animation here
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
+    float sec = time / 1000.0f;
+    // animate here
+    //for(float t = 0; t < sec, t+= dt)
+
+    glutPostRedisplay();
 }

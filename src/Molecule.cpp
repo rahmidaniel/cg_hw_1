@@ -5,11 +5,20 @@
 #include "Molecule.h"
 
 Molecule::Molecule() {
+    init();
+}
+
+void Molecule::init() {
     atomNum = randomInt(2, 8);
     // will subtract from this to generate nodes
     int atomNumCopy = atomNum - 1; // -1 is for the root
-    bonds = std::vector<vertex>(); //TODO not set
+
+    bonds.clear();
+    atoms.clear();
+    nodes = atomNode(); // reset
     generateAtomTree(nodes, atomNumCopy);
+    // set origin and mass center
+    massCenter();
 }
 
 void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
@@ -60,8 +69,30 @@ void Molecule::create() {
     // Creating all atoms
     for(auto atom: atoms) atom->create();
 }
+
 void Molecule::draw() {
     glBindVertexArray(vao);
+    gpuProgram.setUniform(MVP, "MVP");
     glDrawArrays(GL_LINES, 0, bonds.size());
     for(auto atom: atoms) atom->draw();
 }
+
+void Molecule::massCenter() {
+    float mSum = 1;
+    for(auto atom: atoms) {
+        mSum += atom->mass;
+        center.pos.x += atom->center.pos.x * atom->mass;
+        center.pos.y += atom->center.pos.y * atom->mass;
+    }
+    center.pos = center.pos / mSum;
+
+    // Translating all atoms around the origin
+    for(auto atom: atoms) atom->center.pos = atom->center.pos - center.pos;
+    // - || - all bonds // TODO: bonds bad pos USE MAT4 TRANSLATION
+    for(auto bond: bonds) bond.pos = bond.pos - center.pos;
+    MVP = { 1, 0, 0, center.pos.x,    // MVP matrix,
+            0, 1, 0, center.pos.y,    // row-major!
+            0, 0, 1, 0,
+            0, 0, 0, 1 };
+}
+

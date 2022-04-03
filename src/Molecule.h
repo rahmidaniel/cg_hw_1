@@ -13,17 +13,29 @@ class Molecule {
 
     float vel = 0;
     float torque = 0;
-    atomNode nodes = atomNode(); // Tree of nodes
+
+    mat4 MVP;
+    vertex center;
+    atomNode nodes; // Tree of nodes
     std::vector<vertex> bonds;
 
+    // Physics
+    // src = https://www.youtube.com/watch?v=Z2XN8NrvhoQ
+    // ALSO SHIFTS ATOM POSITIONS - makes atom center the origin
+    void massCenter();
+    // Generate atoms and bonds
+    void generateAtomTree(atomNode& node, int& atomNumCopy);
 public:
     int atomNum; // Between 2-8
     std::vector<Atom*> atoms;
 
     Molecule();
-    void generateAtomTree(atomNode& node, int& atomNumCopy);
+    // Resets properties
+    void init();
+    // OpenGL
     void create();
     void draw();
+    void setMVP(mat4 mvp){ MVP = mvp;}
 };
 
 
