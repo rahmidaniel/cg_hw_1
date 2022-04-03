@@ -53,11 +53,6 @@ void onInitialization() {
 
 // Window has become invalid: Redraw
 void onDisplay() {
-//    int error;
-//    while( (error = glGetError()) != GL_NO_ERROR){
-//        printf("error: %n", error);
-//    }
-
 	glClearColor(0.5f, 0.5f, 0.5f, 1);     // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
@@ -71,7 +66,7 @@ void onDisplay() {
 							  0, 0, 0, 1 };
 
 	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
-	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);	// Load a 4x4 row-major float matrix to the specified location
+//	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
     molecule1.draw();
     molecule2.draw();
@@ -81,11 +76,19 @@ void onDisplay() {
 
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
-	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
 	if (key == 't') {
         molecule1.init(); molecule1.create();
         molecule2.init(); molecule2.create();
+    };
+    if (key == 'k') {
+        mat4 MVP = { 1, 0, 0, (float)pX,    // MVP matrix,
+                     0, 1, 0, (float)pY,    // row-major!
+                0, 0, 1, 0,
+                0, 0, 0, 1 };
+        molecule1.setMVP(MVP);
+        molecule2.setMVP(MVP);
     };         // if d, invalidate display, i.e. redraw
+
     glutPostRedisplay();
 }
 

@@ -57,7 +57,6 @@ void Molecule::create() {
     //The bonds as lines
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_STATIC_DRAW);
 
-    // src = smooth triangle example
     // Enable the vertex attribute arrays
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -71,8 +70,18 @@ void Molecule::create() {
 }
 
 void Molecule::draw() {
+
+    //gpuProgram.setUniform(MVP, "MVP");
+    //TODO: doesnt work
+    float mat[4][4] = { 1, 0, 0, 0,    // MVP matrix,
+            0, 1, 0,0,    // row-major!
+            0, 0, 1, 0,
+            0, 0, 0, 1 };
+
+    int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
+    glUniformMatrix4fv(location, 1, GL_TRUE, &MVP[0][0]);	// Load a 4x4 row-major float matrix to the specified location
+
     glBindVertexArray(vao);
-    gpuProgram.setUniform(MVP, "MVP");
     glDrawArrays(GL_LINES, 0, bonds.size());
     for(auto atom: atoms) atom->draw();
 }
@@ -86,10 +95,11 @@ void Molecule::massCenter() {
     }
     center.pos = center.pos / mSum;
 
-    // Translating all atoms around the origin
-    for(auto atom: atoms) atom->center.pos = atom->center.pos - center.pos;
-    // - || - all bonds // TODO: bonds bad pos USE MAT4 TRANSLATION
-    for(auto bond: bonds) bond.pos = bond.pos - center.pos;
+//    // Translating all atoms around the origin
+//    for(auto atom: atoms) atom->center.pos = atom->center.pos - center.pos;
+//    // - || - all bonds // TODO: bonds bad pos USE MAT4 TRANSLATION
+//    for(auto bond: bonds) bond.pos = bond.pos - center.pos;
+
     MVP = { 1, 0, 0, center.pos.x,    // MVP matrix,
             0, 1, 0, center.pos.y,    // row-major!
             0, 0, 1, 0,
