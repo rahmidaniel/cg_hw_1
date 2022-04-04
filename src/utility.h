@@ -12,7 +12,7 @@
 
 // Important constants
 static int worldSize = 1000; // for atom positions
-static int stepNum = 15; // for circle definition (triangle fan count)
+static int stepNum = 5; // for circle definition (triangle fan count)
 static float twicePi = 2 * M_PI; // for circle vertex calc
 static GPUProgram gpuProgram; // vertex and fragment shaders
 

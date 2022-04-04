@@ -9,7 +9,7 @@ Molecule::Molecule() {
 }
 
 void Molecule::init() {
-    atomNum = randomInt(2, 8);
+    atomNum = randomInt(2, 3); // TODO: set to 2-3
     // will subtract from this to generate nodes
     int atomNumCopy = atomNum - 1; // -1 is for the root
 
@@ -69,16 +69,9 @@ void Molecule::create() {
     for(auto atom: atoms) atom->create();
 }
 
-void Molecule::draw() {
+void Molecule::draw(unsigned int gpuProgramID) {
 
-    //gpuProgram.setUniform(MVP, "MVP");
-    //TODO: doesnt work
-    float mat[4][4] = { 1, 0, 0, 0,    // MVP matrix,
-            0, 1, 0,0,    // row-major!
-            0, 0, 1, 0,
-            0, 0, 0, 1 };
-
-    int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
+    int location = glGetUniformLocation(gpuProgramID, "MVP");	// Get the GPU location of uniform variable MVP
     glUniformMatrix4fv(location, 1, GL_TRUE, &MVP[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
     glBindVertexArray(vao);
@@ -100,10 +93,20 @@ void Molecule::massCenter() {
 //    // - || - all bonds // TODO: bonds bad pos USE MAT4 TRANSLATION
 //    for(auto bond: bonds) bond.pos = bond.pos - center.pos;
 
-    MVP = { 1, 0, 0, center.pos.x,    // MVP matrix,
-            0, 1, 0, center.pos.y,    // row-major!
-            0, 0, 1, 0,
-            0, 0, 0, 1 };
+//    MVP = { 1, 0, 0, center.pos.x,    // MVP matrix,
+//            0, 1, 0, center.pos.y,    // row-major!
+//            0, 0, 1, 0,
+//            0, 0, 0, 1 };
+    MVP = TranslateMatrix(center.pos);
+    // transforming atoms to origin
+    for(auto atom: atoms) {
+        vec4 res = vec4(atom->center.pos.x, atom->center.pos.y, 0, 1) * MVP;
+        atom->center.pos = vec2(res.x, res.y);
+    }
+//    for(auto bond: bonds) {
+//        vec4 res = vec4(bond.pos.x, bond.pos.y, 0, 1) * MVP;
+//        bond.pos = vec2(res.x, res.y);
+//    }
 }
 
 void Molecule::react2Molecule(const Molecule& molecule) {
@@ -120,7 +123,13 @@ void Molecule::react2Molecule(const Molecule& molecule) {
         // final multiplication with coulombs constant
         f = f * atom->qCharge * coulombConst;
 
-        F = F + f; // adding atom vector
+        // this vector has to be split into torque and momentum
+        // TODO: use drag here
+        // use vector projection
+        vec2 fm = f * normalize(atom->center.pos);
+        // use normal vector for projection
+        vec2 ff = f * normalize(vec2(atom->center.pos.y, - atom->center.pos.x));
+
     }
 }
 

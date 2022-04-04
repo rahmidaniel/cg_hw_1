@@ -64,12 +64,13 @@ void onDisplay() {
 							  0, 1, 0, 0,    // row-major!
 							  0, 0, 1, 0,
 							  0, 0, 0, 1 };
+//    mat4 scaled = ScaleMatrix(vec2(0.5,0.5));
+//
+//	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
+//	glUniformMatrix4fv(location, 1, GL_TRUE, &scaled[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
-	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
-//	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);	// Load a 4x4 row-major float matrix to the specified location
-
-    molecule1.draw();
-    molecule2.draw();
+    molecule1.draw(gpuProgram.getId());
+    molecule2.draw(gpuProgram.getId());
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }

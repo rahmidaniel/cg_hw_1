@@ -34,7 +34,7 @@ public:
     void init();
     // OpenGL
     void create();
-    void draw();
+    void draw(unsigned int gpuProgramID);
     void setMVP(mat4 mvp){ MVP = mvp;}
     // Physics
     void react2Molecule(const Molecule& molecule);
