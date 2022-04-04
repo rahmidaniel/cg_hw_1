@@ -106,3 +106,21 @@ void Molecule::massCenter() {
             0, 0, 0, 1 };
 }
 
+void Molecule::react2Molecule(const Molecule& molecule) {
+    vec2 F; // direction of the molecule
+    for(auto atom: atoms){
+        // calculate sum force from all target atoms, vec direction
+        vec2 f;
+        // adding all discrete charges
+        for(auto targetAtom: molecule.atoms){
+            vec2 R = (atom->center.pos - targetAtom->center.pos);
+            float len = length(R);
+            f = f + targetAtom->qCharge * (R / (len * len * len));
+        }
+        // final multiplication with coulombs constant
+        f = f * atom->qCharge * coulombConst;
+
+        F = F + f; // adding atom vector
+    }
+}
+

@@ -36,6 +36,8 @@ public:
     void create();
     void draw();
     void setMVP(mat4 mvp){ MVP = mvp;}
+    // Physics
+    void react2Molecule(const Molecule& molecule);
 };
 
 

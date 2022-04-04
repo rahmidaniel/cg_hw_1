@@ -32,6 +32,8 @@ int randomInt(int bLower = 1, int bUpper = RAND_MAX);
  */
 int fastExpo(int base, int exp);
 
+static float coulombConst = 8.9875517923f * fastExpo(10, 9); // src = wikipedia
+
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char * const vertexSource = R"(
 	#version 330				// Shader 3.3
