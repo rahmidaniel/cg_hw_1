@@ -9,7 +9,7 @@ Molecule::Molecule() {
 }
 
 void Molecule::init() {
-    atomNum = randomInt(2, 3); // TODO: set to 2-3
+    atomNum = randomInt(8, 2); // TODO: set to 2-3
     // will subtract from this to generate nodes
     int atomNumCopy = atomNum - 1; // -1 is for the root
 
@@ -28,7 +28,7 @@ void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
     }
 
     // Generating children
-    int children = randomInt(1, atomNumCopy);
+    int children = randomInt(atomNumCopy);
     atomNumCopy -= children; // subtracting from TOTAL nodes
 
     node.n = children;
@@ -39,6 +39,9 @@ void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
         //TODO: check on me later, color and all
         bonds.push_back({node.self.center.pos, vec4(1,1,1,1)}); // p1
         bonds.push_back({node.adj[i].self.center.pos, vec4(1,1,1,1)}); // p2
+
+        // push to atoms bonds
+        node.self.bonds.push_back(&node.adj[i].self.center.pos);
 
         generateAtomTree(node.adj[i], atomNumCopy);
     }
@@ -55,7 +58,7 @@ void Molecule::create() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     //The bonds as lines
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_DYNAMIC_DRAW);
 
     // Enable the vertex attribute arrays
     glEnableVertexAttribArray(0);
@@ -69,12 +72,15 @@ void Molecule::create() {
     for(auto atom: atoms) atom->create();
 }
 
-void Molecule::draw(unsigned int gpuProgramID) {
+void Molecule::draw() {
 
-    int location = glGetUniformLocation(gpuProgramID, "MVP");	// Get the GPU location of uniform variable MVP
-    glUniformMatrix4fv(location, 1, GL_TRUE, &MVP[0][0]);	// Load a 4x4 row-major float matrix to the specified location
+//    int location = glGetUniformLocation(gpuProgramID, "MVP");	// Get the GPU location of uniform variable MVP
+//    glUniformMatrix4fv(location, 1, GL_TRUE, &MVP[0][0]);	// Load a 4x4 row-major float matrix to the specified location
+    update();
+    calculateBonds();
 
-    glBindVertexArray(vao);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_DYNAMIC_DRAW);
+    //glBindVertexArray(vao);
     glDrawArrays(GL_LINES, 0, bonds.size());
     for(auto atom: atoms) atom->draw();
 }
@@ -100,25 +106,28 @@ void Molecule::massCenter() {
     MVP = TranslateMatrix(center.pos);
     // transforming atoms to origin
     for(auto atom: atoms) {
-        vec4 res = vec4(atom->center.pos.x, atom->center.pos.y, 0, 1) * MVP;
-        atom->center.pos = vec2(res.x, res.y);
+//        vec4 res = vec4(atom->center.pos.x, atom->center.pos.y, 0, 1) * MVP;
+//        atom->center.pos = vec2(res.x, res.y);
+        atom->center.pos = atom->center.pos + center.pos;
     }
 //    for(auto bond: bonds) {
 //        vec4 res = vec4(bond.pos.x, bond.pos.y, 0, 1) * MVP;
-//        bond.pos = vec2(res.x, res.y);
+//        bond.pos = bond.pos + center.pos * 2;
 //    }
 }
 
 void Molecule::react2Molecule(const Molecule& molecule) {
+    vel = 0;
     vec2 F; // direction of the molecule
     for(auto atom: atoms){
         // calculate sum force from all target atoms, vec direction
         vec2 f;
         // adding all discrete charges
         for(auto targetAtom: molecule.atoms){
-            vec2 R = (atom->center.pos - targetAtom->center.pos);
+            vec2 R = normalize(atom->center.pos - targetAtom->center.pos);
             float len = length(R);
-            f = f + targetAtom->qCharge * (R / (len * len * len));
+            R = normalize(R);
+            f = f + targetAtom->qCharge * ( R / (len * len));
         }
         // final multiplication with coulombs constant
         f = f * atom->qCharge * coulombConst;
@@ -129,7 +138,34 @@ void Molecule::react2Molecule(const Molecule& molecule) {
         vec2 fm = f * normalize(atom->center.pos);
         // use normal vector for projection
         vec2 ff = f * normalize(vec2(atom->center.pos.y, - atom->center.pos.x));
+        F = F + fm;
+    }
+    //if(length(vel) != 0) F = F - 0.32 * vel; // TODO: drag, 0.32 is mat dependent, test if 'if' matters
+    //F = F - 0.32 * vel;
+    vel = F;
+}
 
+void Molecule::update() {
+    for(auto atom : atoms){
+        atom->center.pos = atom->center.pos + vel;
+    }
+}
+
+void Molecule::calculateBonds() {
+    // refresh the bonds vector with fresh atom data
+    bonds.clear();
+    for(auto atom : atoms){
+        for(auto bond: atom->bonds){
+            bonds.push_back({atom->center.pos, vec4(1,1,1,1)}); // starting point of bond
+            bonds.push_back({*bond, vec4(1,1,1,1)}); // endpoint of bond
+        }
+    }
+}
+
+Molecule::~Molecule() {
+    if(vbo != 0 && vao != 0){
+        glDeleteBuffers(1, &vbo);
+        glDeleteVertexArrays(1, &vao);
     }
 }
 

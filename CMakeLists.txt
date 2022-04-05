@@ -47,8 +47,20 @@ endif()
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 if (UNIX)
+    find_package(OpenGL REQUIRED)
+    find_package(GLFW3 REQUIRED)
+    find_package(glm REQUIRED)
+    find_package(GLEW REQUIRED)
+    find_package(GLUT REQUIRED)
 
-    target_link_libraries(program PRIVATE GL glut GLU GLEW X11 m)
+    if (GLEW_FOUND)
+        include_directories(${GLEW_INCLUDE_DIRS})
+        include_directories(${GLUT_INCLUDE_DIRS})
+        link_libraries(${GLEW_LIBRARIES})
+        link_libraries(${GLUT_LIBRARIES})
+    endif()
+
+    target_link_libraries(program ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES} glfw)
 endif()
 
 if (WIN32)

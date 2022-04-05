@@ -38,6 +38,10 @@
 Molecule molecule1 = Molecule();
 Molecule molecule2 = Molecule();
 
+// Time
+static float lastTick;
+static float tickStep = 0.01;
+
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
@@ -45,7 +49,6 @@ void onInitialization() {
 
     molecule1.create();
     molecule2.create();
-    //for(auto atom: molecule.atoms) atom.create();
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "fragmentColor");
@@ -56,39 +59,23 @@ void onDisplay() {
 	glClearColor(0.5f, 0.5f, 0.5f, 1);     // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
-	// Set color to (0, 1, 0) = green
-	//int location = glGetUniformLocation(gpuProgram.getId(), "color");
-	//glUniform3f(location, 0.0f, 1.0f, 0.0f); // 3 floats
-
-	float MVPtransf[4][4] = { 1, 0, 0, 0,    // MVP matrix,
-							  0, 1, 0, 0,    // row-major!
-							  0, 0, 1, 0,
-							  0, 0, 0, 1 };
-//    mat4 scaled = ScaleMatrix(vec2(0.5,0.5));
+    mat4 scaled = ScaleMatrix(vec2(0.5,0.5));
 //
-//	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
-//	glUniformMatrix4fv(location, 1, GL_TRUE, &scaled[0][0]);	// Load a 4x4 row-major float matrix to the specified location
+	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
+	glUniformMatrix4fv(location, 1, GL_TRUE, &scaled[0][0]);	// Load a 4x4 row-major float matrix to the specified location
 
-    molecule1.draw(gpuProgram.getId());
-    molecule2.draw(gpuProgram.getId());
+    molecule1.draw();
+    molecule2.draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
 
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
-	if (key == 't') {
+	if (key == ' ') {
         molecule1.init(); molecule1.create();
         molecule2.init(); molecule2.create();
-    };
-    if (key == 'k') {
-        mat4 MVP = { 1, 0, 0, (float)pX,    // MVP matrix,
-                     0, 1, 0, (float)pY,    // row-major!
-                0, 0, 1, 0,
-                0, 0, 0, 1 };
-        molecule1.setMVP(MVP);
-        molecule2.setMVP(MVP);
-    };         // if d, invalidate display, i.e. redraw
+    }
 
     glutPostRedisplay();
 }
@@ -127,9 +114,13 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 // Idle event indicating that some time elapsed: do animation here
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
-    float sec = time / 1000.0f;
-    // animate here
-    //for(float t = 0; t < sec, t+= dt)
+    float timeSec = time / 1000.0f;
+    if(timeSec - lastTick > tickStep){
+        molecule1.react2Molecule(molecule2);
+        molecule2.react2Molecule(molecule1);
+
+        lastTick = timeSec;
+    }
 
     glutPostRedisplay();
 }

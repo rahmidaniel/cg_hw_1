@@ -11,8 +11,8 @@
 class Molecule {
     unsigned int vbo, vao;
 
-    float vel = 0;
-    float torque = 0;
+    vec2 vel;
+    vec2 torque;
 
     mat4 MVP;
     vertex center;
@@ -32,12 +32,16 @@ public:
     Molecule();
     // Resets properties
     void init();
+    // Calculates bond vectors, pushes them into 'bonds'
+    void calculateBonds();
     // OpenGL
     void create();
-    void draw(unsigned int gpuProgramID);
-    void setMVP(mat4 mvp){ MVP = mvp;}
+    void draw();
+    void update();
     // Physics
     void react2Molecule(const Molecule& molecule);
+
+    ~Molecule();
 };
 
 

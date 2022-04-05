@@ -18,8 +18,10 @@ public:
     float mass;     //Hydrogen -> Atomic mass: 1.008 u  * <n>
     float qCharge;  //Electron -> -1.602 x 10^19 C.      * <n>
 
+    std::vector<vec2*> bonds;
+
     void init();
-    void calculateVertices(); // fills 'vertices'
+    void calculateVertices(); // fills 'vertices' with circle data
 
     Atom();
     void create();

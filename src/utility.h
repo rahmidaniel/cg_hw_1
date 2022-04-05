@@ -12,9 +12,14 @@
 
 // Important constants
 static int worldSize = 1000; // for atom positions
-static int stepNum = 5; // for circle definition (triangle fan count)
+static int stepNum = 10; // for circle definition (triangle fan count)
 static float twicePi = 2 * M_PI; // for circle vertex calc
 static GPUProgram gpuProgram; // vertex and fragment shaders
+
+// Atom constants
+static int massMulti = 100;
+static int chargeMulti = 2000;
+
 
 struct vertex {
     vec2 pos;
@@ -25,14 +30,14 @@ struct vertex {
  * Will generate between bounds as: [bLower, bUpper]
  * src = https://stackoverflow.com/questions/5008804/generating-random-integer-from-a-range
  */
-int randomInt(int bLower = 1, int bUpper = RAND_MAX);
+int randomInt(int bUpper = RAND_MAX, int bLower = 1);
 
 /* Fast exponentiation
  * src = https://medium.com/techzap/fast-exponentiation-for-competitive-programming-c-2639362698f2
  */
 int fastExpo(int base, int exp);
 
-static float coulombConst = 8.9875517923f * fastExpo(10, 9); // src = wikipedia
+static float coulombConst = 8.988f * fastExpo(10, 9); // src = wikipedia
 
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char * const vertexSource = R"(

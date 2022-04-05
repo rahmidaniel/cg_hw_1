@@ -9,20 +9,23 @@ Atom::Atom() {
 }
 
 void Atom::init() {
+
     // Positions and radii are normalized
-    center.pos = vec2(randomInt(-worldSize,worldSize) / (float)worldSize,
-               randomInt(-worldSize,worldSize) / (float)worldSize);
 
-    radius = randomInt( worldSize / 40, worldSize / 10) / (float)worldSize;
+    center.pos = vec2(randomInt(worldSize,-worldSize) / (float)worldSize,
+               randomInt(worldSize,-worldSize) / (float)worldSize);
 
-    int intensity = randomInt(); // TODO: ask if separate for charge and mass
+    radius = randomInt( worldSize / 10, worldSize / 40) / (float)worldSize;
+
+    int intensity = randomInt(massMulti);
+
+    int neg = randomInt(10) <= 5 ? -1 : 1; // random negative
+
     mass = 1.008f * intensity;
-
-    int neg = randomInt(1,10) <= 5 ? -1 : 1; // random negative
-    qCharge = -1.602f * fastExpo(10, 19) * intensity * neg; // TODO: left -1;1 here
+    qCharge = -1.602f * (1.f/fastExpo(10, 19)) * randomInt(chargeMulti) * neg;
 
     // calculate color intensity
-    float alphaIntensity = (float)intensity/RAND_MAX;
+    float alphaIntensity = (float)intensity/massMulti;
     if(qCharge > 0) center.color = vec4(alphaIntensity,0,0, 1); // red
     else center.color = vec4(0,0,alphaIntensity,1); // blue
 }
@@ -44,10 +47,6 @@ void Atom::create() {
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    // Initialize vertices and load data to GPU
-    calculateVertices();
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex), &vertices[0], GL_STATIC_DRAW);
-
     // Enable the vertex attribute arrays
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -58,8 +57,9 @@ void Atom::create() {
 }
 
 void Atom::draw() {
-    // some transform mtx here
-    glBindVertexArray(vao);
+    calculateVertices();
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex), &vertices[0], GL_DYNAMIC_DRAW);
+
     glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size());
 }
 

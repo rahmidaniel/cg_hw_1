@@ -5,7 +5,7 @@
 #include <iostream>
 #include "utility.h"
 
-int randomInt(int bLower, int bUpper){
+int randomInt(int bUpper, int bLower){
     std::random_device device;
     std::mt19937 rng(device());
     std::uniform_int_distribution<std::mt19937::result_type> distribution(bLower, bUpper);
