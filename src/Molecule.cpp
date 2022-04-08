@@ -97,61 +97,45 @@ void Molecule::massCenter() {
 }
 
 void Molecule::react2Molecule(const Molecule& molecule, float dt) {
-    vec2 FDIR; // direction of the molecule
-    vec2 FROT; // rotation of the molecule
-
-    vec2 V;
-    vec3 M;
     for(auto atom: atoms){
         // calculate sum force from all target atoms, vec direction
-        vec2 f;
+        vec2 F;
         // adding all discrete charges
         for(auto targetAtom: molecule.atoms){
             vec2 R = normalize(atom->center.pos - targetAtom->center.pos);
             float len = length(R);
             R = normalize(R);
-            f = f + targetAtom->qCharge * ( R / (len * len));
+            F = F + targetAtom->qCharge * (R / (len * len));
         }
         // final multiplication with coulombs constant
-        f = f * atom->qCharge * coulombConst;
+        F = F * atom->qCharge * coulombConst;
 
         // this vector has to be split into torque and momentum
-        // TODO: use drag here
-        // use vector projection
-        vec2 fDir = f * normalize(atom->center.pos) * normalize(atom->center.pos);
+        // vector projection
+        vec2 Fm = F * normalize(atom->center.pos);
         // use normal vector for projection
-        //vec2 fRot = f * normalize(vec2(atom->center.pos.y, - atom->center.pos.x)) * normalize(vec2(atom->center.pos.y, - atom->center.pos.x));
-        M = cross(f, atom->center.pos); // M = r x f
+        vec2 Fr = F * normalize(vec2(atom->center.pos.y, - atom->center.pos.x)); //
+        //vec2 w = Fr / length(atom->center.pos); // w = Fr / radius
 
-        //FDIR = FDIR + fDir;
-        //FROT = FROT + fRot;
+        // ROTATION
+        float phi = acosf(length(Fr) / length(center.pos));
+        M += atom->center.pos.x * Fr.x - atom->center.pos.y * Fr.y; // (z component)M = Fx * dx - dy * Fy
+        w = w + M / phi * dt;
+        //a = M / (atom->mass * atom->center.pos);
+        a = a + w * dt;
 
-        vel = vel + fDir / atom->mass;
-        V = V + vel * dt;
-
-        if(length(M) != 0){
-            float phi = acosf(dot(center.pos ,M)/ (length(center.pos) * length(M)));
-
-            transMat = transMat * RotationMatrix(phi, vec3(0,0,1));
-            //update();
-        }
-        //torque = torque + fRot / phi * dt;
-        //phi = phi + torque * dt;
+        // MOVEMENT
+        vel = vel + Fm / atom->mass * dt;
+        center.pos = center.pos + vel * dt;
     }
-    //if(length(vel) != 0) FDIR = FDIR - 0.32 * vel; // TODO: drag, 0.32 is mat dependent, test if 'if' matters
-    //FDIR = FDIR - 0.12 * FDIR;
-
-    // Rotations
-    //  a * b / (|a| * |b|)
-    //vec3 rot = cross(FROT, center.pos);
-//
-    transMat.rows[3] = TranslateMatrix(V).rows[3];
-//
-//    vel = FDIR;
-//    torque = FROT;
 }
 
 void Molecule::update() {
+    // Calculate translations
+//    float phi = acosf(length(w) / length(center.pos));
+//    transMat = transMat * RotationMatrix(phi, vec3(0,0,1));
+    //transMat.rows[3] = TranslateMatrix(vel).rows[3];
+
     for(auto atom : atoms){
         // Transform with mtx
         vec4 res = vec4(atom->center.pos.x, atom->center.pos.y,0,1) * transMat;

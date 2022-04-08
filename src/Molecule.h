@@ -12,8 +12,9 @@ class Molecule {
     unsigned int vbo, vao;
 
     vec2 vel;
-    vec2 torque;
-    float phi;
+    float M;
+    vec2 w;
+    vec2 a;
 
     mat4 transMat;
     vertex center;
