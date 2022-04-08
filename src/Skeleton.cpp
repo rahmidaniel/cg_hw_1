@@ -40,7 +40,7 @@ Molecule molecule2 = Molecule();
 
 // Time
 static float lastTick;
-static float tickStep = 0.01;
+static float tickStep = 0.1;
 
 // Initialization, create an OpenGL context
 void onInitialization() {
@@ -60,6 +60,9 @@ void onDisplay() {
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
     mat4 scaled = ScaleMatrix(vec2(0.5,0.5));
+
+    // calculate poincare
+    // sqrt (x * x + y * y + 1) = w
 //
 	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
 	glUniformMatrix4fv(location, 1, GL_TRUE, &scaled[0][0]);	// Load a 4x4 row-major float matrix to the specified location
@@ -115,12 +118,13 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
     float timeSec = time / 1000.0f;
-    if(timeSec - lastTick > tickStep){
-        molecule1.react2Molecule(molecule2);
-        molecule2.react2Molecule(molecule1);
+    float T = timeSec - lastTick; // time between updates
+    for(float t = 0; t < T; t += tickStep){
+        molecule1.react2Molecule(molecule2, tickStep);
+        molecule2.react2Molecule(molecule1, tickStep);
 
-        lastTick = timeSec;
     }
+        lastTick = timeSec;
 
     glutPostRedisplay();
 }

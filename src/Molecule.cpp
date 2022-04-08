@@ -15,6 +15,7 @@ void Molecule::init() {
 
     bonds.clear();
     atoms.clear();
+    transMat = TranslateMatrix(vec3());
     nodes = atomNode(); // reset
     generateAtomTree(nodes, atomNumCopy);
     // set origin and mass center
@@ -57,9 +58,6 @@ void Molecule::create() {
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    //The bonds as lines
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_DYNAMIC_DRAW);
-
     // Enable the vertex attribute arrays
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -80,7 +78,6 @@ void Molecule::draw() {
     calculateBonds();
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_DYNAMIC_DRAW);
-    //glBindVertexArray(vao);
     glDrawArrays(GL_LINES, 0, bonds.size());
     for(auto atom: atoms) atom->draw();
 }
@@ -94,31 +91,17 @@ void Molecule::massCenter() {
     }
     center.pos = center.pos / mSum;
 
-//    // Translating all atoms around the origin
-//    for(auto atom: atoms) atom->center.pos = atom->center.pos - center.pos;
-//    // - || - all bonds // TODO: bonds bad pos USE MAT4 TRANSLATION
-//    for(auto bond: bonds) bond.pos = bond.pos - center.pos;
-
-//    MVP = { 1, 0, 0, center.pos.x,    // MVP matrix,
-//            0, 1, 0, center.pos.y,    // row-major!
-//            0, 0, 1, 0,
-//            0, 0, 0, 1 };
-    MVP = TranslateMatrix(center.pos);
-    // transforming atoms to origin
     for(auto atom: atoms) {
-//        vec4 res = vec4(atom->center.pos.x, atom->center.pos.y, 0, 1) * MVP;
-//        atom->center.pos = vec2(res.x, res.y);
         atom->center.pos = atom->center.pos + center.pos;
     }
-//    for(auto bond: bonds) {
-//        vec4 res = vec4(bond.pos.x, bond.pos.y, 0, 1) * MVP;
-//        bond.pos = bond.pos + center.pos * 2;
-//    }
 }
 
-void Molecule::react2Molecule(const Molecule& molecule) {
-    vel = 0;
-    vec2 F; // direction of the molecule
+void Molecule::react2Molecule(const Molecule& molecule, float dt) {
+    vec2 FDIR; // direction of the molecule
+    vec2 FROT; // rotation of the molecule
+
+    vec2 V;
+    vec3 M;
     for(auto atom: atoms){
         // calculate sum force from all target atoms, vec direction
         vec2 f;
@@ -135,19 +118,44 @@ void Molecule::react2Molecule(const Molecule& molecule) {
         // this vector has to be split into torque and momentum
         // TODO: use drag here
         // use vector projection
-        vec2 fm = f * normalize(atom->center.pos);
+        vec2 fDir = f * normalize(atom->center.pos) * normalize(atom->center.pos);
         // use normal vector for projection
-        vec2 ff = f * normalize(vec2(atom->center.pos.y, - atom->center.pos.x));
-        F = F + fm;
+        //vec2 fRot = f * normalize(vec2(atom->center.pos.y, - atom->center.pos.x)) * normalize(vec2(atom->center.pos.y, - atom->center.pos.x));
+        M = cross(f, atom->center.pos); // M = r x f
+
+        //FDIR = FDIR + fDir;
+        //FROT = FROT + fRot;
+
+        vel = vel + fDir / atom->mass;
+        V = V + vel * dt;
+
+        if(length(M) != 0){
+            float phi = acosf(dot(center.pos ,M)/ (length(center.pos) * length(M)));
+
+            transMat = transMat * RotationMatrix(phi, vec3(0,0,1));
+            //update();
+        }
+        //torque = torque + fRot / phi * dt;
+        //phi = phi + torque * dt;
     }
-    //if(length(vel) != 0) F = F - 0.32 * vel; // TODO: drag, 0.32 is mat dependent, test if 'if' matters
-    //F = F - 0.32 * vel;
-    vel = F;
+    //if(length(vel) != 0) FDIR = FDIR - 0.32 * vel; // TODO: drag, 0.32 is mat dependent, test if 'if' matters
+    //FDIR = FDIR - 0.12 * FDIR;
+
+    // Rotations
+    //  a * b / (|a| * |b|)
+    //vec3 rot = cross(FROT, center.pos);
+//
+    transMat.rows[3] = TranslateMatrix(V).rows[3];
+//
+//    vel = FDIR;
+//    torque = FROT;
 }
 
 void Molecule::update() {
     for(auto atom : atoms){
-        atom->center.pos = atom->center.pos + vel;
+        // Transform with mtx
+        vec4 res = vec4(atom->center.pos.x, atom->center.pos.y,0,1) * transMat;
+        atom->center.pos = vec2(res.x, res.y);
     }
 }
 

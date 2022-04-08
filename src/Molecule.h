@@ -13,8 +13,9 @@ class Molecule {
 
     vec2 vel;
     vec2 torque;
+    float phi;
 
-    mat4 MVP;
+    mat4 transMat;
     vertex center;
     atomNode nodes; // Tree of nodes
     std::vector<vertex> bonds;
@@ -39,7 +40,7 @@ public:
     void draw();
     void update();
     // Physics
-    void react2Molecule(const Molecule& molecule);
+    void react2Molecule(const Molecule& molecule, float dt);
 
     ~Molecule();
 };
