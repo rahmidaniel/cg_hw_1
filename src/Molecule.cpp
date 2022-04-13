@@ -2,6 +2,7 @@
 // Created by danie on 3/30/2022.
 //
 
+#include <deque>
 #include "Molecule.h"
 
 Molecule::Molecule() {
@@ -9,17 +10,29 @@ Molecule::Molecule() {
 }
 
 void Molecule::init() {
-    atomNum = randomInt(8, 2); // TODO: set to 2-3
+    atomNum = randomInt(8, 2);
     // will subtract from this to generate nodes
     int atomNumCopy = atomNum - 1; // -1 is for the root
 
     bonds.clear();
     atoms.clear();
     transMat = TranslateMatrix(vec3());
+
+    vel = 0;
+
     nodes = atomNode(); // reset
     generateAtomTree(nodes, atomNumCopy);
+    //generateTree();
     // set origin and mass center
     massCenter();
+
+    // Sum of charges in molecule should be 0
+    float sumCharge = 0;
+    for (int i = 0; i < atoms.size() - 1; ++i) {
+        sumCharge += atoms[i]->qCharge;
+    }
+    // -7 + x = 0 -> x = 7 hehe
+    atoms.at(atoms.size()-1)->qCharge = -sumCharge;
 }
 
 void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
@@ -37,10 +50,6 @@ void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
 
     // Recursive call on the children to generate the rest
     for(int i=0; i < children; i++) {
-        //TODO: check on me later, color and all
-        bonds.push_back({node.self.center.pos, vec4(1,1,1,1)}); // p1
-        bonds.push_back({node.adj[i].self.center.pos, vec4(1,1,1,1)}); // p2
-
         // push to atoms bonds
         node.self.bonds.push_back(&node.adj[i].self.center.pos);
 
@@ -52,33 +61,21 @@ void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
 }
 
 void Molecule::create() {
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-    // Enable the vertex attribute arrays
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    // Map attribute array 0 to the vertex data of the interleaved vbo
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *) offsetof(vertex, pos));
-    // Map attribute array 1 to the color data of the interleaved vbo
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *) offsetof(vertex, color));
-
+    ::create(vao, vbo);
     // Creating all atoms
     for(auto atom: atoms) atom->create();
 }
 
 void Molecule::draw() {
-
-//    int location = glGetUniformLocation(gpuProgramID, "MVP");	// Get the GPU location of uniform variable MVP
-//    glUniformMatrix4fv(location, 1, GL_TRUE, &MVP[0][0]);	// Load a 4x4 row-major float matrix to the specified location
     update();
     calculateBonds();
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * bonds.size(), &bonds[0], GL_DYNAMIC_DRAW);
-    glDrawArrays(GL_LINES, 0, bonds.size());
+    // Draw each bond as a line strip
+    for (int i = 0; i < atomNum - 1; ++i) { // tree -> n - 1 edges
+        glDrawArrays(GL_LINE_STRIP, (lineTessellation + 1) * i, (lineTessellation + 1));
+    }
+
     for(auto atom: atoms) atom->draw();
 }
 
@@ -93,54 +90,74 @@ void Molecule::massCenter() {
 
     for(auto atom: atoms) {
         atom->center.pos = atom->center.pos + center.pos;
+
+        // Moment of inertia
+        float r = length(atom->center.pos);
+        theta += atom->mass * r * r;
+    }
+    if(DEBUG_MASS){
+        m.center = center;
+        m.center.color = vec4(0,1,0,1);
+        atoms.push_back(&m);
     }
 }
 
 void Molecule::react2Molecule(const Molecule& molecule, float dt) {
+
+    rotationAngle = 0; // angle of rotation
+    float w = 0; // angular velocity
+    float M = 0; // torque
+
+    // calculate sum force from all target atoms, vec direction, rotation angle
     for(auto atom: atoms){
-        // calculate sum force from all target atoms, vec direction
         vec2 F;
+
         // adding all discrete charges
         for(auto targetAtom: molecule.atoms){
-            vec2 R = normalize(atom->center.pos - targetAtom->center.pos);
+            // values should already be normalized
+//            vec2 R = normalize(atom->center.pos - targetAtom->center.pos);
+//            float len = length(R);
+//            R = normalize(R);
+            vec2 R = targetAtom->center.pos - atom->center.pos;
             float len = length(R);
-            R = normalize(R);
             F = F + targetAtom->qCharge * (R / (len * len));
+            //F = F + atom->qCharge * targetAtom->qCharge * R / coulomb;
         }
         // final multiplication with coulombs constant
         F = F * atom->qCharge * coulombConst;
 
-        // this vector has to be split into torque and momentum
-        // vector projection
-        vec2 Fm = F * normalize(atom->center.pos);
-        // use normal vector for projection
-        vec2 Fr = F * normalize(vec2(atom->center.pos.y, - atom->center.pos.x)); //
-        //vec2 w = Fr / length(atom->center.pos); // w = Fr / radius
+        // Apply drag
+        F = F - dragCoefficient * vel;
+
+        // Momentum force
+        vec2 Fm = F * atom->center.pos;
+        // Rotational force
+        vec2 Fr = F * vec2(atom->center.pos.y, - atom->center.pos.x);
 
         // ROTATION
-        float phi = acosf(length(Fr) / length(center.pos));
         M += atom->center.pos.x * Fr.x - atom->center.pos.y * Fr.y; // (z component)M = Fx * dx - dy * Fy
-        w = w + M / phi * dt;
-        //a = M / (atom->mass * atom->center.pos);
-        a = a + w * dt;
+        w = w + M / theta * dt;
+        rotationAngle = rotationAngle + w; // * dt
 
         // MOVEMENT
-        vel = vel + Fm / atom->mass * dt;
-        center.pos = center.pos + vel * dt;
+        vel = vel + Fm / atom->mass * dt + w * atom->center.pos * dt;
     }
 }
 
 void Molecule::update() {
     // Calculate translations
-//    float phi = acosf(length(w) / length(center.pos));
-//    transMat = transMat * RotationMatrix(phi, vec3(0,0,1));
-    //transMat.rows[3] = TranslateMatrix(vel).rows[3];
+    transMat = transMat * RotationMatrix(rotationAngle, vec3(center.pos.x, center.pos.y, 1));
+    transMat.rows[3] = TranslateMatrix(vel).rows[3];
 
     for(auto atom : atoms){
         // Transform with mtx
         vec4 res = vec4(atom->center.pos.x, atom->center.pos.y,0,1) * transMat;
         atom->center.pos = vec2(res.x, res.y);
     }
+
+    // Transform the center
+    vec4 res = vec4(center.pos.x, center.pos.y,0,1) * transMat;
+    center.pos = vec2(res.x, res.y);
 }
 
 void Molecule::calculateBonds() {
@@ -148,8 +165,8 @@ void Molecule::calculateBonds() {
     bonds.clear();
     for(auto atom : atoms){
         for(auto bond: atom->bonds){
-            bonds.push_back({atom->center.pos, vec4(1,1,1,1)}); // starting point of bond
-            bonds.push_back({*bond, vec4(1,1,1,1)}); // endpoint of bond
+            std::vector<vertex> li = getTessellation(atom->center.pos, *bond ,vec4(1,1,1,1));
+            bonds.insert(bonds.end(), li.begin(), li.end());
         }
     }
 }
@@ -160,4 +177,43 @@ Molecule::~Molecule() {
         glDeleteVertexArrays(1, &vao);
     }
 }
+
+//void Molecule::generateTree() {
+//    atoms = std::vector<Atom>(atomNum);
+//
+//    // Prufer sequence
+//    std::deque<int> P(atomNum - 2);
+//    for (int i = 0; i < atomNum - 2; ++i) P[i] = randomInt(atomNum-1, 0);
+//
+//    // Ordered list
+//    std::deque<int> L(atomNum);
+//    for (int i = 0; i < atomNum; ++i) L[i] = i+1;
+//
+//    for (int i = 0; i < atomNum - 2; ++i) {
+//        int k = -1;
+//        for (int j = 0; j < atomNum; ++j) {
+//            if(std::find(P.begin(), P.end(), L[j]) == P.end()){
+//                k = j;
+//                L.at(j) = -1;
+//                break;
+//            }
+//        }
+//        if(k != -1){
+//            int j = P.at(0); // first number in P
+//            // add edge here
+//            atoms[k].bonds.push_back(&atoms[j].center.pos);
+//
+//            // removing values used
+//            P.pop_front();
+//            L.shrink_to_fit();
+//            P.shrink_to_fit();
+//        }
+//    }
+//    std::vector<int> f(2);
+//    for (int i = 0; i < atomNum; ++i) {
+//        if(L[i] != -1) f.push_back(L[i]);
+//    }
+//    atoms[f[0]].bonds.push_back(&atoms[f[1]].center.pos);
+//
+//}
 

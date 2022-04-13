@@ -1,5 +1,5 @@
 //=============================================================================================
-// Mintaprogram: Zöld háromszög. Ervenyes 2019. osztol.
+// Mintaprogram: Zï¿½ld hï¿½romszï¿½g. Ervenyes 2019. osztol.
 //
 // A beadott program csak ebben a fajlban lehet, a fajl 1 byte-os ASCII karaktereket tartalmazhat, BOM kihuzando.
 // Tilos:
@@ -35,37 +35,63 @@
 #include "Molecule.h"
 
 // Data
-Molecule molecule1 = Molecule();
-Molecule molecule2 = Molecule();
+Molecule molecule1;
+Molecule molecule2;
 
 // Time
 static float lastTick;
-static float tickStep = 0.1;
+static float tickStep = 0.1f;
+
+// World objects
+std::vector<vertex> disk;
+
+// OpenGL
+unsigned int vao, vbo;
+
+void create(); // for the disk
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
     glLineWidth(2.0f); // line pixel width
 
+    // Create world
+    create();
+
     molecule1.create();
     molecule2.create();
 
-	// create program for the GPU
+    // Create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "fragmentColor");
+}
+
+void create() {
+    create(vao, vbo);
+
+    // Creating the Poincare disk
+    tessellateCircle(disk, {0, vec4(0.5f, 0.5f, 0.5f, 1)});
 }
 
 // Window has become invalid: Redraw
 void onDisplay() {
-	glClearColor(0.5f, 0.5f, 0.5f, 1);     // background color
+	glClearColor(0.f, 0.f, 0.f, 1);     // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
-    mat4 scaled = ScaleMatrix(vec2(0.5,0.5));
-
-    // calculate poincare
-    // sqrt (x * x + y * y + 1) = w
-//
+    // MVP
 	int location = glGetUniformLocation(gpuProgram.getId(), "MVP");	// Get the GPU location of uniform variable MVP
+    mat4 scaled = ScaleMatrix(vec2(1,1));
 	glUniformMatrix4fv(location, 1, GL_TRUE, &scaled[0][0]);	// Load a 4x4 row-major float matrix to the specified location
+
+    // Poincare flag to false
+    location = glGetUniformLocation(gpuProgram.getId(), "poincare");
+    glUniform1i(location, false);
+
+    // Poincare disk (in Euclidean space)
+    glBufferData(GL_ARRAY_BUFFER, disk.size() * sizeof(vertex), &disk[0], GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, disk.size());
+
+    // Transform to poincare form here
+    glUniform1i(location, true);
 
     molecule1.draw();
     molecule2.draw();
@@ -119,7 +145,7 @@ void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
     float timeSec = time / 1000.0f;
     float T = timeSec - lastTick; // time between updates
-    for(float t = 0; t < T; t += tickStep){
+    for(float t = 0.f; t < T; t += tickStep){
         molecule1.react2Molecule(molecule2, tickStep);
         molecule2.react2Molecule(molecule1, tickStep);
 

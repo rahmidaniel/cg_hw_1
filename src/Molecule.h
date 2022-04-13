@@ -12,9 +12,11 @@ class Molecule {
     unsigned int vbo, vao;
 
     vec2 vel;
-    float M;
-    vec2 w;
-    vec2 a;
+    float rotationAngle;
+    float theta; // Moment of inertia
+
+    // DEBUG MASS
+    Atom m;
 
     mat4 transMat;
     vertex center;
@@ -23,10 +25,14 @@ class Molecule {
 
     // Physics
     // src = https://www.youtube.com/watch?v=Z2XN8NrvhoQ
-    // ALSO SHIFTS ATOM POSITIONS - makes atom center the origin
+    // ALSO SHIFTS ATOM POSITIONS
     void massCenter();
     // Generate atoms and bonds
     void generateAtomTree(atomNode& node, int& atomNumCopy);
+
+    // Prufer tree generation
+    // src = http://www-math.ucdenver.edu/%7Ewcherowi/courses/m4408/gtaln7.html
+    void generateTree();
 public:
     int atomNum; // Between 2-8
     std::vector<Atom*> atoms;
@@ -39,9 +45,9 @@ public:
     // OpenGL
     void create();
     void draw();
-    void update();
     // Physics
     void react2Molecule(const Molecule& molecule, float dt);
+    void update();
 
     ~Molecule();
 };
