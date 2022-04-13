@@ -20,11 +20,11 @@ void Atom::init() {
     int neg = randomInt(10) <= 5 ? -1 : 1; // random negative
 
     mass = 1.008f * massIntensity;
-    qCharge = -1.602f * (1.f/fastExpo(10, 19)) * randomInt(chargeMulti) * neg;
+    q = -1.602f * (1.f / fastExpo(10, 19)) * randomInt(chargeMulti) * neg;
 
     // Calculate color intensity from charge
     float alphaIntensity = radius * 10;
-    if(qCharge > 0) center.color = vec4(alphaIntensity,0,0, 1); // red
+    if(q > 0) center.color = vec4(alphaIntensity, 0, 0, 1); // red
     else center.color = vec4(0,0,alphaIntensity,1); // blue
 }
 
@@ -43,4 +43,10 @@ Atom::~Atom() {
         glDeleteBuffers(1, &vbo);
         glDeleteVertexArrays(1, &vao);
     }
+}
+
+void Atom::setCharge(float q) {
+    this->q = q;
+    if(q > 0) center.color = vec4(radius * 10,0,0, 1); // red
+    else center.color = vec4(0,0,radius * 10,1); // blue
 }

@@ -29,10 +29,10 @@ void Molecule::init() {
     // Sum of charges in molecule should be 0
     float sumCharge = 0;
     for (int i = 0; i < atoms.size() - 1; ++i) {
-        sumCharge += atoms[i]->qCharge;
+        sumCharge += atoms[i]->q;
     }
     // -7 + x = 0 -> x = 7 hehe
-    atoms.at(atoms.size()-1)->qCharge = -sumCharge;
+    atoms.at(atoms.size()-1)->setCharge(-sumCharge);
 }
 
 void Molecule::generateAtomTree(atomNode& node, int& atomNumCopy){
@@ -95,11 +95,6 @@ void Molecule::massCenter() {
         float r = length(atom->center.pos);
         theta += atom->mass * r * r;
     }
-    if(DEBUG_MASS){
-        m.center = center;
-        m.center.color = vec4(0,1,0,1);
-        atoms.push_back(&m);
-    }
 }
 
 void Molecule::react2Molecule(const Molecule& molecule, float dt) {
@@ -120,11 +115,11 @@ void Molecule::react2Molecule(const Molecule& molecule, float dt) {
 //            R = normalize(R);
             vec2 R = targetAtom->center.pos - atom->center.pos;
             float len = length(R);
-            F = F + targetAtom->qCharge * (R / (len * len));
-            //F = F + atom->qCharge * targetAtom->qCharge * R / coulomb;
+            F = F + targetAtom->q * (R / (len * len));
+            //F = F + atom->q * targetAtom->q * R / coulomb;
         }
         // final multiplication with coulombs constant
-        F = F * atom->qCharge * coulombConst;
+        F = F * atom->q * coulombConst;
 
         // Apply drag
         F = F - dragCoefficient * vel;

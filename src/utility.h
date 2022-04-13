@@ -19,9 +19,6 @@ static float twicePi = 2 * M_PI; // for circle vertex calc
 static float coulomb = 1 / (twicePi * 8.854f);
 static GPUProgram gpuProgram; // vertex and fragment shaders
 
-// Molecule debug
-static bool DEBUG_MASS = true;
-
 // Atom constants
 static int massMulti = 100;
 static int chargeMulti = 2000;
