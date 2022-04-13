@@ -115,8 +115,8 @@ void Molecule::react2Molecule(const Molecule& molecule, float dt) {
 //            R = normalize(R);
             vec2 R = targetAtom->center.pos - atom->center.pos;
             float len = length(R);
-            F = F + targetAtom->q * (R / (len * len));
-            //F = F + atom->q * targetAtom->q * R / coulomb;
+            //F = F + targetAtom->q * (R / (len * len));
+            F = F + targetAtom->q * R;// / (coulombConst * 2);
         }
         // final multiplication with coulombs constant
         F = F * atom->q * coulombConst;

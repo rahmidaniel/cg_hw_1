@@ -14,9 +14,9 @@
 static int worldSize = 1000; // for atom positions
 static int circleTessellation = 20; // for circle definition (triangle fan count)
 static int lineTessellation = 20; // for line definition (line strip count)
-static float dragCoefficient = 0.2;
+static float dragCoefficient = 0.2; // wood
+static float permittivityCoefficient = 80.2;
 static float twicePi = 2 * M_PI; // for circle vertex calc
-static float coulomb = 1 / (twicePi * 8.854f);
 static GPUProgram gpuProgram; // vertex and fragment shaders
 
 // Atom constants
@@ -53,6 +53,7 @@ int randomInt(int bUpper = RAND_MAX, int bLower = 1);
 int fastExpo(int base, int exp);
 
 static float coulombConst = 8.988f * fastExpo(10, 9); // src = wikipedia
+static float relativePermittivity = permittivityCoefficient * fastExpo(10, 12) / 8.854f; // src = wikipedia
 
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char * const vertexSource = R"(
